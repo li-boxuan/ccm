@@ -510,9 +510,11 @@ class RemoteOptionsParser():
 
         :return Usage for the remote execution options
         """
-        # Retrieve the text for just the arguments
-        usage = self.parser.format_help().split("optional arguments:")[1]
-
+        remote_arguments_usage = self.parser.format_help()
+        chunks = re.split("^(optional arguments:|options:)", remote_arguments_usage)
+        if len(chunks) > 2:
+            # Try to extract argument description only, otherwise output the whole usage string
+            remote_arguments_usage = chunks[2]
         # Remove any blank lines and return
         return "Remote Options:" + os.linesep + \
-               os.linesep.join([s for s in usage.splitlines() if s])
+               os.linesep.join([s for s in remote_arguments_usage.splitlines() if s])

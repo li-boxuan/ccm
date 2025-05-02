@@ -19,7 +19,6 @@ import os
 import sys
 import tempfile
 import time
-from distutils.version import LooseVersion  # pylint: disable=import-error, no-name-in-module
 from pathlib import Path
 
 import pytest
@@ -518,3 +517,23 @@ class TestErrorLogGrepping(ccmtest.Tester):
 
         err = '\n'.join([line1, line2, line3, line4])
         self.assertGreppedLog(err, [[line1], [line2], [line4]])
+
+
+class TestCCMCLI(ccmtest.Tester):
+    def test_help_message_with_paramiko(self):
+        self._test_help_message(True)
+
+    def test_help_message_without_paramiko(self):
+        self._test_help_message(False)
+
+    @staticmethod
+    def _test_help_message(paramiko: bool):
+        import ccmlib.remote
+        before = ccmlib.remote.PARAMIKO_IS_AVAILABLE
+        try:
+            ccmlib.remote.PARAMIKO_IS_AVAILABLE = paramiko
+            from ccmlib.cmds.common import get_command
+            cmd = get_command('cluster', 'create')
+            cmd.get_parser().print_help()
+        finally:
+            ccmlib.remote.PARAMIKO_IS_AVAILABLE = before

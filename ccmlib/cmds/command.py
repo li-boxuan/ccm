@@ -25,6 +25,7 @@ import re
 
 from six import print_
 
+import ccmlib
 from ccmlib import common
 from ccmlib.cluster_factory import ClusterFactory
 from ccmlib.remote import PARAMIKO_IS_AVAILABLE, get_remote_usage
@@ -70,7 +71,8 @@ class Cmd(object):
     def get_parser(self):
         if self.usage == "":
             pass
-        if PARAMIKO_IS_AVAILABLE:
+        # Do not collapse to PARAMIKO_IS_AVAILABLE, we need to pull it dynamically for testing purposes
+        if ccmlib.remote.PARAMIKO_IS_AVAILABLE:
             self.usage = self.usage.replace("usage: ccm",
                                             "usage: ccm [remote_options]") + \
                          os.linesep + os.linesep + \

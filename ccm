@@ -24,20 +24,10 @@ import pkg_resources
 from six import print_
 
 from ccmlib import common
-from ccmlib.cmds import cluster_cmds, command, node_cmds
+from ccmlib.cmds import cluster_cmds, node_cmds
+from ccmlib.cmds.common import get_command
 from ccmlib.remote import (PARAMIKO_IS_AVAILABLE, execute_ccm_remotely,
                            get_remote_options, get_remote_usage)
-
-
-def get_command(kind, cmd):
-    cmd_name = kind.lower().capitalize() + cmd.lower().capitalize() + "Cmd"
-    try:
-        klass = (cluster_cmds if kind.lower() == 'cluster' else node_cmds).__dict__[cmd_name]
-    except KeyError:
-        return None
-    if not issubclass(klass, command.Cmd):
-        return None
-    return klass()
 
 
 def print_subcommand_usage(kind):
