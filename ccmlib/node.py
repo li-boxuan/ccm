@@ -789,6 +789,9 @@ class Node(object):
     def add_custom_launch_arguments(self, args):
         pass
 
+    def __log_dir(self):
+        return '-Dcassandra.logdir=%s' % os.path.join(self.get_path(), 'logs')
+
     def start(self,
               join_ring=True,
               no_wait=False,
@@ -876,7 +879,7 @@ class Node(object):
 
         args = args + ['-p', pidfile, '-Dcassandra.join_ring=%s' % str(join_ring)]
 
-        args.append('-Dcassandra.logdir=%s' % os.path.join(self.get_path(), 'logs'))
+        args.append(self.__log_dir())
         if replace_token is not None:
             args.append('-Dcassandra.replace_token=%s' % str(replace_token))
         if replace_address is not None:
@@ -982,6 +985,25 @@ class Node(object):
             self._update_pid(process)
         return self.is_running()
 
+    def __unix_kill_process_matching(self, pattern, sig=signal.SIGTERM):
+        matcher = re.compile(pattern)
+        for proc in psutil.process_iter(['pid', 'cmdline']):
+            try:
+                pid = proc.info['pid']
+                cmdline = " ".join(proc.info['cmdline']) if proc.info['cmdline'] else ""
+                if matcher.search(cmdline):
+                    try:
+                        os.kill(int(pid), sig)
+                    except ProcessLookupError:
+                        logger.info(f"Process {pid} not found")
+                    except PermissionError:
+                        logger.info(f"Did not have permissions to kill {pid}")
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+    def __unix_kill(self, sig):
+        self.__unix_kill_process_matching(".*{}.*{}.*".format(self.__log_dir(), "org.apache.cassandra.service.CassandraDaemon"), sig)
+
     def stop(self, wait=True, wait_other_notice=False, signal_event=signal.SIGTERM, **kwargs):
         """
         Stop the node.
@@ -1046,6 +1068,10 @@ class Node(object):
             else:
                 return True
         else:
+            # Make sure it is actually stopped even if the PID wasn't found for some reason
+            # Always kill because it should already be stopped and we aren't waiting for it to stop
+            if not common.is_win():
+                self.__unix_kill(signal.SIGKILL)
             return False
 
     def wait_for_compactions(self, timeout=120):

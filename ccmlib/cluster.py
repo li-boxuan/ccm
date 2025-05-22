@@ -574,6 +574,7 @@ class Cluster(object):
                 if not node._wait_for_running(p, timeout_s=7):
                     raise NodeError("Node {} should be running before waiting for <started listening> log message, "
                                     "but C* process is terminated.".format(node.name))
+            for node, p, mark in started:
                 try:
                     timeout=kwargs.get('timeout', DEFAULT_CLUSTER_WAIT_TIMEOUT_IN_SECS)
                     timeout=int(os.environ.get('CCM_CLUSTER_START_TIMEOUT_OVERRIDE', timeout))
